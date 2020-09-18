@@ -6,20 +6,21 @@ import factory from "highcharts/modules/export-data";
 
 import './App.css';
 
-
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      initalInvestment: 0,
-      monthlyContribution: 0,
-      timeInYears: 0,
-      interestPercentage: 0,
+      initalInvestment: 100000,
+      monthlyContribution: 100,
+      timeInYears: 5,
+      interestPercentage: 2,
       interestRateVariance: 0,
-      compoundFrequency: 1,
-      futureSeries: [10000, 11400, 12828, 14284.56, 15770.25, 17285.66],
-      ContributionSeries: [10000, 11200, 12400, 13600, 14800, 16000],
-      graphComplete: true
+      compoundFrequency: 365,
+      futureValueSeries: [],
+      varianceAboveSeries: [],
+      varianceBelowSeries: [],
+      ContributionSeries: [],
+      graphComplete: false
     };
   }
 
@@ -29,12 +30,90 @@ class App extends Component {
     this.setState({ [nam]: val });
   }
 
-  calculateCompoundInterest(event) {
-    console.log('====================================');
-    console.log("Here I am");
-    console.log('====================================');
+  calculateCompoundInterest = async () => {
+    let futureValue = [];
+    let varianceAbove = [];
+    let varianceBelow = [];
 
-    event.preventDefault();
+    let total = [];
+    let principal = this.state.initalInvestment;
+    let principalAbove = this.state.initalInvestment;
+    let principalBelow = this.state.initalInvestment;
+
+    var interest = this.state.interestPercentage / 100;
+    var interestAbove = (this.state.interestPercentage + this.state.interestRateVariance) / 100;
+    var interestBelow = (this.state.interestPercentage - this.state.interestRateVariance) / 100;
+
+    let time = this.state.timeInYears * this.state.compoundFrequency;
+    let monthly = this.state.monthlyContribution;
+    let savings = monthly * 12;
+
+    futureValue.push(principal);
+    varianceAbove.push(principalAbove);
+    varianceBelow.push(principalBelow);
+
+    total.push(principal);
+
+
+    for (let index = 0; index < time; index++) {
+
+      if (this.state.compoundFrequency === 1) {
+        principal = principal + (principal * interest) + (monthly * 12);
+        if (this.state.interestRateVariance !== 0) {
+          principalAbove = principalAbove + (principalAbove * interestAbove) + (monthly * 12);
+          principalBelow = principalBelow + (principalBelow * interestBelow) + (monthly * 12);
+        }
+      }
+      else if (this.state.compoundFrequency === 2) {
+        principal = principal + (principal * (interest / 2)) + (monthly * 6);
+        if (this.state.interestRateVariance !== 0) {
+          principalAbove = principalAbove + (principalAbove * (interestAbove / 2)) + (monthly * 6);
+          principalBelow = principalBelow + (principalBelow * (interestBelow / 2)) + (monthly * 6);
+        }
+      }
+      else if (this.state.compoundFrequency === 12) {
+        principal = principal + (principal * (interest / 12)) + (monthly * 1);
+        if (this.state.interestRateVariance !== 0) {
+          principalAbove = principalAbove + (principalAbove * (interestAbove / 12)) + (monthly * 1);
+          principalBelow = principalBelow + (principalBelow * (interestBelow / 12)) + (monthly * 1);
+        }
+      }
+      else if (this.state.compoundFrequency === 365) {
+        principal = principal + (principal * (interest / 365)) + (monthly / (365 / 12));
+        if (this.state.interestRateVariance !== 0) {
+          principalAbove = principalAbove + (principalAbove * (interestAbove / 365)) + (monthly / (365 / 12));
+          principalBelow = principalBelow + (principalBelow * (interestBelow / 365)) + (monthly / (365 / 12));
+        }
+      }
+
+      futureValue.push(parseFloat(principal.toFixed(2)));
+      if (this.state.interestRateVariance !== 0) {
+        varianceAbove.push(parseFloat(principalAbove.toFixed(2)));
+        varianceBelow.push(parseFloat(principalBelow.toFixed(2)));
+      }
+      total.push(total[index] + savings);
+    }
+
+    let newFinal = [];
+    let newVarianceAbove = [];
+    let newVarianceBelow = [];
+
+
+    for (let i = 0; i <= time; i += this.state.compoundFrequency) {
+      newFinal.push(futureValue[i]);
+      if (this.state.interestRateVariance !== 0) {
+        newVarianceAbove.push(varianceAbove[i]);
+        newVarianceBelow.push(varianceBelow[i]);
+      }
+    }
+
+    await this.setState({
+      futureValueSeries: [...newFinal],
+      varianceAboveSeries: [...newVarianceAbove],
+      varianceBelowSeries: [...newVarianceBelow],
+      ContributionSeries: [...total.slice(0, this.state.timeInYears + 1)],
+      graphComplete: true
+    })
   }
 
   render() {
@@ -42,48 +121,44 @@ class App extends Component {
     factory(Highcharts);
     Highcharts.setOptions({ lang: { decimalPoint: '.', thousandsSep: ',' } });
 
+    const { interestPercentage, interestRateVariance,
+      futureValueSeries, varianceAboveSeries,
+      varianceBelowSeries, ContributionSeries } = this.state;
+
+    const diffVarianceChart = [
+      { name: `Variance Above (${(interestPercentage + interestRateVariance).toFixed(2)}%)`, data: varianceAboveSeries, color: '#00325b' },
+      { name: `Future Value (${interestPercentage.toFixed(2)}%)`, data: futureValueSeries, color: '#bf280d' },
+      { name: `Variance Below (${(interestPercentage - interestRateVariance).toFixed(2)}%)`, data: varianceBelowSeries, color: '#269092' }
+    ];
+
+    const normalChart = [
+      { name: `Future Value (${interestPercentage.toFixed(2)}%)`, data: futureValueSeries, color: '#bf280d' },
+      { name: 'Total Contributions', data: ContributionSeries, color: '#269092' }
+    ];
+
+    var mySeries = [];
+
+    if (interestRateVariance !== 0)
+      mySeries = diffVarianceChart
+    else
+      mySeries = normalChart
+
     const options = {
-      title: {
-        text: 'Total Savings'
-      },
-      credits: {
-        text: 'I Love Making Money',
-        href: 'https://ilovemakingmoney.com/'
-      },
-
+      title: { text: 'Total Savings' },
+      credits: { text: 'I Love Making Money', href: 'https://ilovemakingmoney.com/' },
       tooltip: {
-        shared: true,
-        valuePrefix: '$',
-        valueDecimals: 2,
-        thousandsSep: ',',
+        shared: true, valuePrefix: '$',
+        valueDecimals: 2, thousandsSep: ',',
         headerFormat: 'Year {point.key}<br/>',
-
       },
       yAxis: {
-        title: {
-          text: 'US Dollar($)',
-        },
-        labels: {
-          format: '${value:,.0f}'
-        },
+        title: { text: 'US Dollar($)' },
+        labels: { format: '${value:,.0f}' },
         tickInterval: 1000,
       },
+      xAxis: { labels: { formatter: function () { return 'Year ' + this.value } } },
 
-      xAxis: {
-        labels: {
-          formatter: function () { return 'Year ' + this.value }
-        },
-      },
-
-      series: [{
-        name: `Future Value (${this.state.interestPercentage.toFixed(2)}%)`,
-        color: '#bf280d',
-        data: this.state.futureSeries
-      }, {
-        name: 'Total Contributions',
-        color: '#269092',
-        data: this.state.ContributionSeries
-      }],
+      series: mySeries,
       exporting: {
         enabled: true,
 
@@ -187,23 +262,26 @@ class App extends Component {
                       <input type="submit" id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
                     </div>
                   </div>
-
-                  <div id="results_container" className="results-container ajax-changed" tabIndex="-1" >
-                    <div className="results-container__inner">
-                      <h2> The Results Are In</h2>
-                      <h3 className="calculator__results-amount">In <span className="amount">{this.state.timeInYears}</span> years, you will have <span className="amount">$116,652.93</span></h3>
-                    </div>
-                  </div>
+                  
                   {
-                    this.state.graphComplete == false
+                    this.state.graphComplete === false
                       ? null
-                      : <div className="highChart"><HighchartsReact highcharts={Highcharts} options={options} /></div>
+                      : <div>
+                        <div id="results_container" className="results-container ajax-changed" tabIndex="-1" >
+                          <div className="results-container__inner">
+                            <h2>The Results Are In</h2>
+                            <h3 className="calculator__results-amount">In <span className="amount">{this.state.timeInYears}</span> years, you will have <span className="amount">${this.state.futureValueSeries[this.state.timeInYears]}</span></h3>
+                          </div>
+                        </div>
+                        <div className="highChart"><HighchartsReact highcharts={Highcharts} options={options} /></div>
+                      </div>
                   }
                 </div>
               </div>
             </div>
           </div>
         </form>
+        <input type="submit" onClick={this.calculateCompoundInterest} value="Calculate" />
       </div>
     )
   }

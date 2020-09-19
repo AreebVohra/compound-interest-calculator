@@ -172,7 +172,6 @@ class App extends Component {
             <p className="form-required"><strong><span>*</span> DENOTES A REQUIRED FIELD</strong></p>
             <div className="sec-calculator" id="compound-interest-calc">
               <div className="calculator">
-                <h2 className="element-invisible">Calculator</h2>
                 <div id="calculator_wrapper" className="calculator_wrapper js-form-wrapper form-wrapper">
 
                   <div className="calculator_step">
@@ -190,8 +189,7 @@ class App extends Component {
                   <div className="calculator_step">
                     <h3>Step 2: Contribute</h3>
                     <div className="calculator__form-input">
-                      <div
-                        className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-addition form-item-addition">
+                      <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-addition form-item-addition">
                         <label htmlFor="edit-addition">Monthly Contribution</label>
                         <input className="monetary-input neg-input form-text" type="text" name="monthlyContribution" size="10" maxLength="128"
                           onChange={this.myChangeHandler} />
@@ -262,7 +260,7 @@ class App extends Component {
                       <input type="submit" id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
                     </div>
                   </div>
-                  
+
                   {
                     this.state.graphComplete === false
                       ? null

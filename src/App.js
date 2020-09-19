@@ -10,12 +10,12 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      initalInvestment: 100000,
-      monthlyContribution: 100,
-      timeInYears: 5,
-      interestPercentage: 2,
+      initalInvestment: 0,
+      monthlyContribution: 0,
+      timeInYears: 0,
+      interestPercentage: 0,
       interestRateVariance: 0,
-      compoundFrequency: 365,
+      compoundFrequency: 1,
       futureValueSeries: [],
       varianceAboveSeries: [],
       varianceBelowSeries: [],
@@ -121,18 +121,17 @@ class App extends Component {
     factory(Highcharts);
     Highcharts.setOptions({ lang: { decimalPoint: '.', thousandsSep: ',' } });
 
-    const { interestPercentage, interestRateVariance,
-      futureValueSeries, varianceAboveSeries,
-      varianceBelowSeries, ContributionSeries } = this.state;
+    const { interestPercentage, interestRateVariance, futureValueSeries,
+      varianceAboveSeries, varianceBelowSeries, ContributionSeries } = this.state;
 
     const diffVarianceChart = [
-      { name: `Variance Above (${(interestPercentage + interestRateVariance).toFixed(2)}%)`, data: varianceAboveSeries, color: '#00325b' },
-      { name: `Future Value (${interestPercentage.toFixed(2)}%)`, data: futureValueSeries, color: '#bf280d' },
-      { name: `Variance Below (${(interestPercentage - interestRateVariance).toFixed(2)}%)`, data: varianceBelowSeries, color: '#269092' }
+      { name: `Variance Above (${interestPercentage + interestRateVariance}%)`, data: varianceAboveSeries, color: '#00325b' },
+      { name: `Future Value (${interestPercentage}%)`, data: futureValueSeries, color: '#bf280d' },
+      { name: `Variance Below (${interestPercentage - interestRateVariance}%)`, data: varianceBelowSeries, color: '#269092' }
     ];
 
     const normalChart = [
-      { name: `Future Value (${interestPercentage.toFixed(2)}%)`, data: futureValueSeries, color: '#bf280d' },
+      { name: `Future Value (${interestPercentage}%)`, data: futureValueSeries, color: '#bf280d' },
       { name: 'Total Contributions', data: ContributionSeries, color: '#269092' }
     ];
 
@@ -167,7 +166,7 @@ class App extends Component {
 
     return (
       <div className="block block-sec-calculator block-sec-calculator-blocksec-compound-calculator block-title-sec-compound-interest-calculator">
-        <form onSubmit={this.calculateCompoundInterest}>
+        <form>
           <div id="compound-interest-calc-wrapper">
             <p className="form-required"><strong><span>*</span> DENOTES A REQUIRED FIELD</strong></p>
             <div className="sec-calculator" id="compound-interest-calc">
@@ -179,9 +178,8 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-principal form-item-principal">
                         <label htmlFor="edit-principal" className="js-form-required form-required">Initial Investment</label>
-                        <input className="monetary-input num-input form-text required" type="text" name="initalInvestment" size="10" maxLength="128" required="required" onChange={this.myChangeHandler} />
+                        <input className="monetary-input num-input form-text required" type="text" name="initalInvestment" size="10" maxLength="128" required onChange={this.myChangeHandler} />
                         <div id="edit-principal--description" className="description">Amount of money that you have available to invest initially.</div>
-
                       </div>
                     </div>
                   </div>
@@ -256,11 +254,10 @@ class App extends Component {
                   <div id="compound-calc__buttons" className="buttons">
                     <div className="form-actions js-form-wrapper form-wrapper" id="edit-actions">
                       <div id="compound-calc__errors" className="calc-errors"></div>
-                      <input className="submit button" type="submit" value="Calculate" />
+                      <input className="submit button" type="submit" onClick={this.calculateCompoundInterest} value="Calculate" />
                       <input type="submit" id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
                     </div>
                   </div>
-
                   {
                     this.state.graphComplete === false
                       ? null

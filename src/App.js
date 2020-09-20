@@ -10,10 +10,10 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      initalInvestment: 0,
+      initalInvestment: 100000,
       monthlyContribution: 0,
-      timeInYears: 0,
-      interestPercentage: 0,
+      timeInYears: 5,
+      interestPercentage: 2,
       interestRateVariance: 0,
       compoundFrequency: 1,
       futureValueSeries: [],
@@ -30,7 +30,9 @@ class App extends Component {
     this.setState({ [nam]: val });
   }
 
-  calculateCompoundInterest = async () => {
+  calculateCompoundInterest = async (event) => {
+    event.preventDefault();
+
     let futureValue = [];
     let varianceAbove = [];
     let varianceBelow = [];
@@ -116,6 +118,18 @@ class App extends Component {
     })
   }
 
+  resetCalculator = (event) => {
+    event.preventDefault();
+
+    this.setState({
+      futureValueSeries: [],
+      varianceAboveSeries: [],
+      varianceBelowSeries: [],
+      ContributionSeries: [],
+      graphComplete: false
+    })
+  }
+
   render() {
     exporting(Highcharts);
     factory(Highcharts);
@@ -166,11 +180,12 @@ class App extends Component {
 
     return (
       <div className="block block-sec-calculator block-sec-calculator-blocksec-compound-calculator block-title-sec-compound-interest-calculator">
-        <form>
+        <form onSubmit={this.calculateCompoundInterest.bind(this)}>
           <div id="compound-interest-calc-wrapper">
             <p className="form-required"><strong><span>*</span> DENOTES A REQUIRED FIELD</strong></p>
             <div className="sec-calculator" id="compound-interest-calc">
               <div className="calculator">
+
                 <div id="calculator_wrapper" className="calculator_wrapper js-form-wrapper form-wrapper">
 
                   <div className="calculator_step">
@@ -178,7 +193,7 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-principal form-item-principal">
                         <label htmlFor="edit-principal" className="js-form-required form-required">Initial Investment</label>
-                        <input className="monetary-input num-input form-text required" type="text" name="initalInvestment" size="10" maxLength="128" required onChange={this.myChangeHandler} />
+                        <input className="monetary-input num-input form-text required" type="text" name="initalInvestment" size="10" maxLength="128" required value={this.state.initalInvestment} onChange={this.myChangeHandler} />
                         <div id="edit-principal--description" className="description">Amount of money that you have available to invest initially.</div>
                       </div>
                     </div>
@@ -202,7 +217,7 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-num-years form-item-num-years">
                         <label htmlFor="edit-num-years" className="js-form-required form-required">Length of Time in Years</label>
-                        <input className="num-years num-input form-text required" type="text" name="timeInYears" size="10" maxLength="128" required="required" onChange={this.myChangeHandler} />
+                        <input className="num-years num-input form-text required" type="text" name="timeInYears" size="10" maxLength="128" required value={this.state.timeInYears} onChange={this.myChangeHandler} />
 
                         <div id="edit-num-years--description" className="description">Length of time, in years, that you plan to save.</div>
                       </div>
@@ -214,7 +229,7 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-interest-rate form-item-interest-rate">
                         <label htmlFor="edit-interest-rate" className="js-form-required form-required">Estimated Interest Rate</label>
-                        <input className="interest-rate ir-input num-input form-text required" type="text" name="interestPercentage" size="10" maxLength="128" required="required" onChange={this.myChangeHandler} />
+                        <input className="interest-rate ir-input num-input form-text required" type="text" name="interestPercentage" size="10" maxLength="128" required value={this.state.interestPercentage} onChange={this.myChangeHandler} />
 
                         <div id="edit-interest-rate--description" className="description">Your estimated annual interest rate.</div>
                       </div>
@@ -252,10 +267,9 @@ class App extends Component {
                   </div>
 
                   <div id="compound-calc__buttons" className="buttons">
-                    <div className="form-actions js-form-wrapper form-wrapper" id="edit-actions">
-                      <div id="compound-calc__errors" className="calc-errors"></div>
-                      <input className="submit button" type="submit" onClick={this.calculateCompoundInterest} value="Calculate" />
-                      <input type="submit" id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
+                    <div id="edit-actions">
+                      <input className="submit button" type="submit" value="Calculate" />
+                      <input type="submit" onClick={this.resetCalculator} id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
                     </div>
                   </div>
                   {
@@ -276,7 +290,6 @@ class App extends Component {
             </div>
           </div>
         </form>
-        <input type="submit" onClick={this.calculateCompoundInterest} value="Calculate" />
       </div>
     )
   }

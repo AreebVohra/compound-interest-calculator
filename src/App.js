@@ -3,6 +3,7 @@ import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import exporting from "highcharts/modules/exporting";
 import factory from "highcharts/modules/export-data";
+import $ from 'jquery';
 
 import './App.css';
 
@@ -10,23 +11,24 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      initalInvestment: 100000,
+      initalInvestment: 0,
       monthlyContribution: 0,
-      timeInYears: 5,
-      interestPercentage: 2,
+      timeInYears: 0,
+      interestPercentage: 0,
       interestRateVariance: 0,
       compoundFrequency: 1,
       futureValueSeries: [],
       varianceAboveSeries: [],
       varianceBelowSeries: [],
       ContributionSeries: [],
-      graphComplete: false
+      graphComplete: false,
+      showTable: false
     };
   }
 
   myChangeHandler = (event) => {
     let nam = event.target.name;
-    let val = event.target.value;
+    let val = parseInt(event.target.value);
     this.setState({ [nam]: val });
   }
 
@@ -42,9 +44,11 @@ class App extends Component {
     let principalAbove = this.state.initalInvestment;
     let principalBelow = this.state.initalInvestment;
 
+    let varianceRange = this.state.interestRateVariance;
+
     var interest = this.state.interestPercentage / 100;
-    var interestAbove = (this.state.interestPercentage + this.state.interestRateVariance) / 100;
-    var interestBelow = (this.state.interestPercentage - this.state.interestRateVariance) / 100;
+    var interestAbove = (this.state.interestPercentage + varianceRange) / 100;
+    var interestBelow = (this.state.interestPercentage - varianceRange) / 100;
 
     let time = this.state.timeInYears * this.state.compoundFrequency;
     let monthly = this.state.monthlyContribution;
@@ -119,15 +123,67 @@ class App extends Component {
   }
 
   resetCalculator = (event) => {
-    event.preventDefault();
+    // event.preventDefault();
 
     this.setState({
+      initalInvestment: 0,
+      monthlyContribution: 0,
+      timeInYears: 0,
+      interestPercentage: 0,
+      interestRateVariance: 0,
+      compoundFrequency: 1,
       futureValueSeries: [],
       varianceAboveSeries: [],
       varianceBelowSeries: [],
       ContributionSeries: [],
       graphComplete: false
     })
+  }
+
+  numberWithCommas(x) {
+    return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  toggleTable = (data) => {
+
+    if (this.state.showTable === false) {
+      if (data) {
+        var columns = data.length;
+        var rows = data[0].data.length;
+        var newTable = '<div class="highcharts-data-table">';
+        var highlighted = 'highlighted-value';
+        newTable += '<table id="highcharts-data-table-0" summary="Table representation of chart.">';
+        newTable += '<caption class="highcharts-table-caption">Total Savings in US Dollars</caption>';
+        newTable += '<thead><tr>';
+        newTable += '<th scope="col" class="text">Years</th>';
+
+        for (let y = 0; y < columns; y++) {
+          var classNames = (data[y].name === 'Future Value' || data[y].name === 'Total Savings Compounded') ? ('text ' + highlighted) : ('text');
+          newTable += '<th scope="col" class="' + classNames + '" >' + data[y].name + '</th>'
+        }
+        newTable += '</thead></tr>';
+        newTable += '<tbody>';
+        for (let i = 0; i < rows; i++) {
+          newTable += '<tr>';
+          newTable += '<td scope="row" class="text">Year ' + i + '</td>';
+          for (let j = 0; j < columns; j++) {
+            var classNames = (data[j].name === 'Future Value' || data[j].name === 'Total Savings Compounded') ? ('number ' + highlighted) : ('number');
+            newTable += '<td class="' + classNames + '" >$' + data[j].data[i].toLocaleString('en-US', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+          }
+          newTable += '</tr>'
+        }
+        newTable += '</tbody>';
+        newTable += '</table>';
+        newTable += '</div>';
+
+        $('#calculator_results_table').append(newTable);
+      }
+    }
+    else {
+      $('#calculator_results_table').empty();
+    }
+
+    this.setState(prevState => ({ showTable: !prevState.showTable }));
   }
 
   render() {
@@ -139,13 +195,13 @@ class App extends Component {
       varianceAboveSeries, varianceBelowSeries, ContributionSeries } = this.state;
 
     const diffVarianceChart = [
-      { name: `Variance Above (${interestPercentage + interestRateVariance}%)`, data: varianceAboveSeries, color: '#00325b' },
-      { name: `Future Value (${interestPercentage}%)`, data: futureValueSeries, color: '#bf280d' },
-      { name: `Variance Below (${interestPercentage - interestRateVariance}%)`, data: varianceBelowSeries, color: '#269092' }
+      { name: `Variance Above (${interestPercentage + interestRateVariance}.00%)`, data: varianceAboveSeries, color: '#00325b' },
+      { name: `Future Value (${interestPercentage}.00%)`, data: futureValueSeries, color: '#bf280d' },
+      { name: `Variance Below (${interestPercentage - interestRateVariance}.00%)`, data: varianceBelowSeries, color: '#269092' }
     ];
 
     const normalChart = [
-      { name: `Future Value (${interestPercentage}%)`, data: futureValueSeries, color: '#bf280d' },
+      { name: `Future Value (${interestPercentage}.00%)`, data: futureValueSeries, color: '#bf280d' },
       { name: 'Total Contributions', data: ContributionSeries, color: '#269092' }
     ];
 
@@ -158,7 +214,7 @@ class App extends Component {
 
     const options = {
       title: { text: 'Total Savings' },
-      credits: { text: 'I Love Making Money', href: 'https://ilovemakingmoney.com/' },
+      credits: { text: 'ILoveMakingMoney.com', href: 'https://ilovemakingmoney.com/' },
       tooltip: {
         shared: true, valuePrefix: '$',
         valueDecimals: 2, thousandsSep: ',',
@@ -169,12 +225,29 @@ class App extends Component {
         labels: { format: '${value:,.0f}' },
         tickInterval: 1000,
       },
-      xAxis: { labels: { formatter: function () { return 'Year ' + this.value } } },
+      xAxis: {
+        labels: { formatter: function () { return 'Year ' + this.value } },
+        title: {
+          text: 'Number of Years',
+          style: {
+            visibility: 'hidden',
+          }
+        }
+      },
 
       series: mySeries,
+      navigation: {
+        menuStyle: {
+          background: '#E0E0E0',
+          color: 'black'
+
+        },
+        menuItemHoverStyle: {
+          color: 'white'
+        }
+      },
       exporting: {
         enabled: true,
-
       }
     };
 
@@ -193,7 +266,7 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-principal form-item-principal">
                         <label htmlFor="edit-principal" className="js-form-required form-required">Initial Investment</label>
-                        <input className="monetary-input num-input form-text required" type="text" name="initalInvestment" size="10" maxLength="128" required value={this.state.initalInvestment} onChange={this.myChangeHandler} />
+                        <input className="monetary-input num-input form-text required" type="text" name="initalInvestment" size="10" maxLength="128" required onChange={this.myChangeHandler} />
                         <div id="edit-principal--description" className="description">Amount of money that you have available to invest initially.</div>
                       </div>
                     </div>
@@ -217,7 +290,7 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-num-years form-item-num-years">
                         <label htmlFor="edit-num-years" className="js-form-required form-required">Length of Time in Years</label>
-                        <input className="num-years num-input form-text required" type="text" name="timeInYears" size="10" maxLength="128" required value={this.state.timeInYears} onChange={this.myChangeHandler} />
+                        <input className="num-years num-input form-text required" type="text" name="timeInYears" size="10" maxLength="128" required onChange={this.myChangeHandler} />
 
                         <div id="edit-num-years--description" className="description">Length of time, in years, that you plan to save.</div>
                       </div>
@@ -229,7 +302,7 @@ class App extends Component {
                     <div className="calculator__form-input">
                       <div className="js-form-item form-item js-form-type-textfield form-type-textfield js-form-item-interest-rate form-item-interest-rate">
                         <label htmlFor="edit-interest-rate" className="js-form-required form-required">Estimated Interest Rate</label>
-                        <input className="interest-rate ir-input num-input form-text required" type="text" name="interestPercentage" size="10" maxLength="128" required value={this.state.interestPercentage} onChange={this.myChangeHandler} />
+                        <input className="interest-rate ir-input num-input form-text required" type="text" name="interestPercentage" size="10" maxLength="128" required onChange={this.myChangeHandler} />
 
                         <div id="edit-interest-rate--description" className="description">Your estimated annual interest rate.</div>
                       </div>
@@ -269,20 +342,21 @@ class App extends Component {
                   <div id="compound-calc__buttons" className="buttons">
                     <div id="edit-actions">
                       <input className="submit button" type="submit" value="Calculate" />
-                      <input type="submit" onClick={this.resetCalculator} id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
+                      <input type="reset" onClick={this.resetCalculator} id="edit-reset" name="op" value="Reset" className="button button--reset js-form-submit form-submit" />
                     </div>
                   </div>
                   {
                     this.state.graphComplete === false
                       ? null
-                      : <div>
-                        <div id="results_container" className="results-container ajax-changed" tabIndex="-1" >
-                          <div className="results-container__inner">
-                            <h2>The Results Are In</h2>
-                            <h3 className="calculator__results-amount">In <span className="amount">{this.state.timeInYears}</span> years, you will have <span className="amount">${this.state.futureValueSeries[this.state.timeInYears]}</span></h3>
-                          </div>
+                      : <div id="results_container" className="results-container ajax-changed" tabIndex="-1" >
+                        <div className="results-container__inner">
+                          <h2>The Results Are In</h2>
+                          <h3 className="calculator__results-amount">In <span className="amount">{this.state.timeInYears}</span> years, you will have <span className="amount">${this.numberWithCommas(this.state.futureValueSeries[this.state.timeInYears])}</span></h3>
                         </div>
                         <div className="highChart"><HighchartsReact highcharts={Highcharts} options={options} /></div>
+                        <button onClick={() => this.toggleTable(mySeries)} id="toggle_table">{this.state.showTable ? "Hide Table" : "Show Table"}</button>
+                        <div id="calculator_results_table" className="results_container__table" width="400">
+                        </div>
                       </div>
                   }
                 </div>

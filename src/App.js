@@ -29,7 +29,11 @@ class App extends Component {
   myChangeHandler = (event) => {
     let nam = event.target.name;
     let val = parseInt(event.target.value);
-    this.setState({ [nam]: val });
+    if (isNaN(val)) {
+      this.setState({ [nam]: 0 });
+    } else {
+      this.setState({ [nam]: val });
+    }
   }
 
   calculateCompoundInterest = async (event) => {
@@ -251,6 +255,10 @@ class App extends Component {
       }
     };
 
+    console.log('====================================');
+    console.log(typeof this.state.monthlyContribution);
+    console.log(this.state.monthlyContribution);
+    console.log('====================================');
     return (
       <div className="block block-sec-calculator block-sec-calculator-blocksec-compound-calculator block-title-sec-compound-interest-calculator">
         <form onSubmit={this.calculateCompoundInterest.bind(this)}>
